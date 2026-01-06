@@ -2,22 +2,41 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pantalla TV</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        .view-section { display: none; min-height: 100vh; height: 100vh; }
+        /* MEJORA VISUAL: Fondo negro absoluto y cursor oculto */
+        body { 
+            margin: 0; 
+            padding: 0;
+            overflow: hidden; 
+            background: #000; 
+            font-family: sans-serif; 
+            width: 100vw;
+            height: 100vh;
+            cursor: none; /* Oculta el cursor del mouse/control */
+        }
+
+        .view-section { display: none; min-height: 100vh; height: 100vh; width: 100vw; }
 
         /* Estilos del Carrusel */
         .swiper { width: 100%; height: 100%; }
         .swiper-slide { background: #000; display: flex; justify-content: center; align-items: center; }
-        .swiper-slide img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        /* MEJORA DE NITIDEZ: Optimizaciones para renderizado de imagen */
+        .swiper-slide img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; /* Asegura que se vea toda la imagen */
+            image-rendering: -webkit-optimize-contrast; /* Ayuda en algunas pantallas */
+        }
+
         .swiper-button-next, .swiper-button-prev { color: white; transform: scale(1.5); text-shadow: 0 0 5px black; }
         .modo-auto .swiper-button-next, .modo-auto .swiper-button-prev { display: none !important; }
 
-        /* Estilos del Video */
+        /* Estilos del Video Principal */
         #vista-video { display: flex; justify-content: center; align-items: center; background: #000; }
         video { width: 100%; height: 100%; object-fit: contain; }
 
@@ -25,6 +44,10 @@
     </style>
 </head>
 <body>
+
+    <video id="insomnia-video" playsinline autoplay muted loop width="1" height="1" style="opacity: 0.01; position: absolute; z-index: -1;">
+        <source src="data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMQAAAAhmcmVlAAAGF21kYXQAAAKzBgX//5l2A/8A//9gAAAAAAA=" type="video/mp4">
+    </video>
 
     <div id="vista-galeria" class="view-section">
         <div class="swiper mySwiper">
@@ -43,31 +66,76 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
     <script>
+        // --- INICIO: Lógica Anti-Sleep y Pantalla Completa ---
+        
+        // 1. Activar Video Insomnio
+        const insomniaVideo = document.getElementById('insomnia-video');
+        const activarInsomnio = () => {
+            insomniaVideo.play().catch(e => console.log("Esperando interacción para insomnia video..."));
+        };
+
+        // 2. Solicitar Wake Lock (API del Navegador)
+        let wakeLock = null;
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock activo');
+                    wakeLock.addEventListener('release', () => console.log('Wake Lock soltado'));
+                }
+            } catch (err) {
+                console.log(`Error Wake Lock: ${err.name}, ${err.message}`);
+            }
+        };
+
+        // 3. Hack Scroll para ocultar barra de direcciones
+        window.onload = () => {
+            activarInsomnio();
+            requestWakeLock();
+            setTimeout(() => window.scrollTo(0, 1), 1000);
+        };
+
+        // Reintentar activar todo si el usuario toca el control remoto (Click)
+        document.addEventListener('click', () => {
+            activarInsomnio();
+            requestWakeLock();
+        });
+        
+        // Si la pestaña vuelve a tener foco (ej: se fue la luz y volvió), reactivar
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+                activarInsomnio();
+            }
+        });
+        // --- FIN: Lógica Anti-Sleep ---
+
+
+        // --- TU LÓGICA ORIGINAL (Con pequeñas mejoras) ---
         const socket = io();
         const params = new URLSearchParams(window.location.search);
         const myId = params.get('id') || 'general';
         
         document.getElementById('id-pantalla').innerText = `ID: ${myId}`;
 
-        // Lógica de conexión y reconexión
         socket.on('connect', () => {
-            console.log("Conectado al servidor. Solicitando contenido...");
+            console.log("Conectado. Solicitando contenido...");
             socket.emit('join', myId);
         });
 
         let swiper;
 
         socket.on('contentUpdate', (payload) => {
-            // Filtrar si el mensaje no es para mí
             if(payload.target !== 'all' && payload.target !== myId) return;
 
             ocultarTodo();
 
-            // CASO 1: GALERÍA DE IMÁGENES
+            // CASO 1: GALERÍA
             if (payload.type === 'gallery') {
                 const wrapper = document.getElementById('galeria-contenido');
                 wrapper.innerHTML = '';
                 payload.urls.forEach(url => {
+                    // Nota: Asegúrate de que las URLs sean imágenes grandes (1920x1080)
                     wrapper.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
                 });
 
@@ -79,7 +147,7 @@
                 let swiperOptions = {
                     effect: "fade", loop: true,
                     pagination: { el: ".swiper-pagination", clickable: true },
-                    keyboard: { enabled: true }
+                    keyboard: { enabled: true } // Permite pasar fotos con el control remoto
                 };
 
                 if (payload.options && payload.options.autoPlay) {
@@ -95,12 +163,11 @@
 
                 swiper = new Swiper(".mySwiper", swiperOptions);
             } 
-            // CASO 2: VIDEO
+            // CASO 2: VIDEO PRINCIPAL
             else if (payload.type === 'video') {
                 const container = document.getElementById('vista-video');
                 container.style.display = 'flex';
                 
-                // Borramos y recreamos el video para liberar memoria del navegador
                 container.innerHTML = `
                     <video id="video-display" controls autoplay muted loop playsinline preload="auto">
                         <source src="${payload.url}" type="video/mp4">
@@ -109,14 +176,15 @@
                 
                 setTimeout(() => {
                     const v = document.getElementById('video-display');
-                    if(v) v.play().catch(e => console.log("Intento de autoplay bloqueado:", e));
+                    // Importante: Unmute manual podría requerirse si el navegador es estricto, 
+                    // pero 'muted' garantiza autoplay visual.
+                    if(v) v.play().catch(e => console.log("Autoplay bloqueado:", e));
                 }, 100);
             }
         });
 
         function ocultarTodo() {
             document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
-            // Limpieza de video para evitar fugas de memoria
             document.getElementById('vista-video').innerHTML = ''; 
         }
     </script>
