@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pantalla TV</title>
+    <title>Pantalla TV (Debug Mode)</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     
     <style>
@@ -25,12 +25,12 @@
         .swiper { width: 100%; height: 100%; }
         .swiper-slide { background: #000; display: flex; justify-content: center; align-items: center; }
         
-        /* MEJORA DE NITIDEZ: Optimizaciones para renderizado de imagen */
+        /* MEJORA DE NITIDEZ */
         .swiper-slide img { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; /* Asegura que se vea toda la imagen */
-            image-rendering: -webkit-optimize-contrast; /* Ayuda en algunas pantallas */
+            object-fit: contain; 
+            image-rendering: -webkit-optimize-contrast; 
         }
 
         .swiper-button-next, .swiper-button-prev { color: white; transform: scale(1.5); text-shadow: 0 0 5px black; }
@@ -66,12 +66,40 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
     <script>
-        // --- INICIO: Lógica Anti-Sleep y Pantalla Completa ---
+        // --- INICIO: LÓGICA ANTI-SLEEP & DEBUG ---
         
-        // 1. Activar Video Insomnio
+        // 1. Crear Indicador Visual (Para saber si el hack está funcionando)
+        const debugDiv = document.createElement('div');
+        debugDiv.style.position = 'absolute';
+        debugDiv.style.top = '10px';
+        debugDiv.style.left = '10px';
+        debugDiv.style.padding = '8px 12px';
+        debugDiv.style.background = 'red';
+        debugDiv.style.color = 'white';
+        debugDiv.style.zIndex = '9999';
+        debugDiv.style.fontSize = '16px';
+        debugDiv.style.fontWeight = 'bold';
+        debugDiv.style.borderRadius = '5px';
+        debugDiv.innerText = '⚠️ ANTI-SLEEP INACTIVO (Haz Clic)';
+        document.body.appendChild(debugDiv);
+
         const insomniaVideo = document.getElementById('insomnia-video');
-        const activarInsomnio = () => {
-            insomniaVideo.play().catch(e => console.log("Esperando interacción para insomnia video..."));
+
+        // Función que revisa si el video está pausado por el navegador
+        const verificarEstado = () => {
+            if (insomniaVideo.paused) {
+                // ESTADO ROJO: El navegador bloqueó el video
+                debugDiv.style.background = 'red';
+                debugDiv.innerText = '⛔ VIDEO PAUSADO (Haz clic en pantalla)';
+                // Intentamos darle play por código, pero suele requerir clic humano
+                insomniaVideo.play().catch(e => console.log("Autoplay bloqueado por navegador"));
+            } else {
+                // ESTADO VERDE: Todo funcionando
+                debugDiv.style.background = 'green';
+                debugDiv.innerText = '✅ ANTI-SLEEP ACTIVO';
+                // Hacemos el cuadro un poco transparente para que no estorbe tanto
+                debugDiv.style.opacity = '0.6';
+            }
         };
 
         // 2. Solicitar Wake Lock (API del Navegador)
@@ -81,37 +109,44 @@
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
                     console.log('Wake Lock activo');
-                    wakeLock.addEventListener('release', () => console.log('Wake Lock soltado'));
                 }
             } catch (err) {
                 console.log(`Error Wake Lock: ${err.name}, ${err.message}`);
             }
         };
 
-        // 3. Hack Scroll para ocultar barra de direcciones
+        // 3. Inicialización
         window.onload = () => {
-            activarInsomnio();
+            verificarEstado();
             requestWakeLock();
+            // Revisar CADA 2 SEGUNDOS que el video siga corriendo
+            setInterval(verificarEstado, 2000);
+            
+            // Scroll hack para barra de direcciones
             setTimeout(() => window.scrollTo(0, 1), 1000);
         };
 
-        // Reintentar activar todo si el usuario toca el control remoto (Click)
+        // 4. Activación Manual (Clic del Control Remoto)
         document.addEventListener('click', () => {
-            activarInsomnio();
+            insomniaVideo.play().then(() => {
+                verificarEstado();
+            }).catch(e => console.error(e));
+            
             requestWakeLock();
         });
         
-        // Si la pestaña vuelve a tener foco (ej: se fue la luz y volvió), reactivar
+        // Si la pestaña vuelve a tener foco, reactivar todo
         document.addEventListener('visibilitychange', async () => {
-            if (wakeLock !== null && document.visibilityState === 'visible') {
+            if (document.visibilityState === 'visible') {
                 await requestWakeLock();
-                activarInsomnio();
+                insomniaVideo.play();
             }
         });
-        // --- FIN: Lógica Anti-Sleep ---
+
+        // --- FIN LÓGICA ANTI-SLEEP ---
 
 
-        // --- TU LÓGICA ORIGINAL (Con pequeñas mejoras) ---
+        // --- LÓGICA DE CONTENIDO (Socket.io) ---
         const socket = io();
         const params = new URLSearchParams(window.location.search);
         const myId = params.get('id') || 'general';
@@ -135,7 +170,6 @@
                 const wrapper = document.getElementById('galeria-contenido');
                 wrapper.innerHTML = '';
                 payload.urls.forEach(url => {
-                    // Nota: Asegúrate de que las URLs sean imágenes grandes (1920x1080)
                     wrapper.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
                 });
 
@@ -147,7 +181,7 @@
                 let swiperOptions = {
                     effect: "fade", loop: true,
                     pagination: { el: ".swiper-pagination", clickable: true },
-                    keyboard: { enabled: true } // Permite pasar fotos con el control remoto
+                    keyboard: { enabled: true } 
                 };
 
                 if (payload.options && payload.options.autoPlay) {
@@ -176,9 +210,7 @@
                 
                 setTimeout(() => {
                     const v = document.getElementById('video-display');
-                    // Importante: Unmute manual podría requerirse si el navegador es estricto, 
-                    // pero 'muted' garantiza autoplay visual.
-                    if(v) v.play().catch(e => console.log("Autoplay bloqueado:", e));
+                    if(v) v.play().catch(e => console.log("Autoplay contenido bloqueado:", e));
                 }, 100);
             }
         });
