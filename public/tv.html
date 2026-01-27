@@ -3,55 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pantalla TV (Debug Mode)</title>
+    <title>Optibelt TV Display</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     
     <style>
-        /* MEJORA VISUAL: Fondo negro absoluto y cursor oculto */
+        /* Estilos Generales: Pantalla completa, fondo negro, sin cursor */
         body { 
             margin: 0; 
             padding: 0;
             overflow: hidden; 
             background: #000; 
-            font-family: sans-serif; 
+            font-family: 'Segoe UI', sans-serif; 
             width: 100vw;
             height: 100vh;
-            cursor: none; /* Oculta el cursor del mouse/control */
+            cursor: none; /* Oculta el mouse para que se vea pro */
         }
 
         .view-section { display: none; min-height: 100vh; height: 100vh; width: 100vw; }
 
-        /* Estilos del Carrusel */
+        /* --- Estilos del Carrusel (Galería) --- */
         .swiper { width: 100%; height: 100%; }
         .swiper-slide { background: #000; display: flex; justify-content: center; align-items: center; }
         
-        /* MEJORA DE NITIDEZ */
         .swiper-slide img { 
             width: 100%; 
             height: 100%; 
-            object-fit: contain; 
+            object-fit: contain; /* Ajusta la imagen sin deformarla */
             image-rendering: -webkit-optimize-contrast; 
         }
 
+        /* Flechas de navegación (solo visibles si no es automático) */
         .swiper-button-next, .swiper-button-prev { color: white; transform: scale(1.5); text-shadow: 0 0 5px black; }
         .modo-auto .swiper-button-next, .modo-auto .swiper-button-prev { display: none !important; }
 
-        /* Estilos del Video Principal */
+        /* --- Estilos del Video Principal --- */
         #vista-video { display: flex; justify-content: center; align-items: center; background: #000; }
         video { width: 100%; height: 100%; object-fit: contain; }
 
-        #id-pantalla { position: absolute; bottom: 15px; right: 15px; color: rgba(255,255,255,0.3); font-size: 20px; z-index: 999; }
+        /* Etiqueta pequeña con el ID de la pantalla (abajo derecha) */
+        #id-pantalla { 
+            position: absolute; 
+            bottom: 20px; 
+            right: 20px; 
+            color: rgba(255,255,255,0.2); 
+            font-size: 18px; 
+            z-index: 999; 
+            font-weight: bold;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-    <video id="insomnia-video" playsinline autoplay muted loop width="1" height="1" style="opacity: 0.01; position: absolute; z-index: -1;">
-        <source src="data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMQAAAAhmcmVlAAAGF21kYXQAAAKzBgX//5l2A/8A//9gAAAAAAA=" type="video/mp4">
-    </video>
-
     <div id="vista-galeria" class="view-section">
         <div class="swiper mySwiper">
-            <div class="swiper-wrapper" id="galeria-contenido"></div>
+            <div class="swiper-wrapper" id="galeria-contenido">
+                </div>
             <div class="swiper-button-next"></div>
             <div class="swiper-button-prev"></div>
             <div class="swiper-pagination"></div>
@@ -66,124 +74,56 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
     <script>
-        // --- INICIO: LÓGICA ANTI-SLEEP & DEBUG ---
-        
-        // 1. Crear Indicador Visual (Para saber si el hack está funcionando)
-        const debugDiv = document.createElement('div');
-        debugDiv.style.position = 'absolute';
-        debugDiv.style.top = '10px';
-        debugDiv.style.left = '10px';
-        debugDiv.style.padding = '8px 12px';
-        debugDiv.style.background = 'red';
-        debugDiv.style.color = 'white';
-        debugDiv.style.zIndex = '9999';
-        debugDiv.style.fontSize = '16px';
-        debugDiv.style.fontWeight = 'bold';
-        debugDiv.style.borderRadius = '5px';
-        debugDiv.innerText = '⚠️ ANTI-SLEEP INACTIVO (Haz Clic)';
-        document.body.appendChild(debugDiv);
-
-        const insomniaVideo = document.getElementById('insomnia-video');
-
-        // Función que revisa si el video está pausado por el navegador
-        const verificarEstado = () => {
-            if (insomniaVideo.paused) {
-                // ESTADO ROJO: El navegador bloqueó el video
-                debugDiv.style.background = 'red';
-                debugDiv.innerText = '⛔ VIDEO PAUSADO (Haz clic en pantalla)';
-                // Intentamos darle play por código, pero suele requerir clic humano
-                insomniaVideo.play().catch(e => console.log("Autoplay bloqueado por navegador"));
-            } else {
-                // ESTADO VERDE: Todo funcionando
-                debugDiv.style.background = 'green';
-                debugDiv.innerText = '✅ ANTI-SLEEP ACTIVO';
-                // Hacemos el cuadro un poco transparente para que no estorbe tanto
-                debugDiv.style.opacity = '0.6';
-            }
-        };
-
-        // 2. Solicitar Wake Lock (API del Navegador)
-        let wakeLock = null;
-        const requestWakeLock = async () => {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock activo');
-                }
-            } catch (err) {
-                console.log(`Error Wake Lock: ${err.name}, ${err.message}`);
-            }
-        };
-
-        // 3. Inicialización
-        window.onload = () => {
-            verificarEstado();
-            requestWakeLock();
-            // Revisar CADA 2 SEGUNDOS que el video siga corriendo
-            setInterval(verificarEstado, 2000);
-            
-            // Scroll hack para barra de direcciones
-            setTimeout(() => window.scrollTo(0, 1), 1000);
-        };
-
-        // 4. Activación Manual (Clic del Control Remoto)
-        document.addEventListener('click', () => {
-            insomniaVideo.play().then(() => {
-                verificarEstado();
-            }).catch(e => console.error(e));
-            
-            requestWakeLock();
-        });
-        
-        // Si la pestaña vuelve a tener foco, reactivar todo
-        document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState === 'visible') {
-                await requestWakeLock();
-                insomniaVideo.play();
-            }
-        });
-
-        // --- FIN LÓGICA ANTI-SLEEP ---
-
-
-        // --- LÓGICA DE CONTENIDO (Socket.io) ---
+        // --- CONEXIÓN CON EL SERVIDOR ---
         const socket = io();
+        
+        // Obtener el ID de la URL (ej: tv.html?id=Reception)
         const params = new URLSearchParams(window.location.search);
         const myId = params.get('id') || 'general';
         
-        document.getElementById('id-pantalla').innerText = `ID: ${myId}`;
+        // Mostrar ID en pantalla discretamente
+        document.getElementById('id-pantalla').innerText = myId;
 
+        // Al conectar, unirse al "Cuarto" (Room) específico
         socket.on('connect', () => {
-            console.log("Conectado. Solicitando contenido...");
+            console.log(`Conectado al servidor. ID: ${myId}`);
             socket.emit('join', myId);
         });
 
-        let swiper;
+        let swiper; // Variable para guardar la instancia del carrusel
 
+        // --- RECIBIR CONTENIDO NUEVO ---
         socket.on('contentUpdate', (payload) => {
+            // Doble verificación: Solo procesar si es para MÍ o para TODOS
             if(payload.target !== 'all' && payload.target !== myId) return;
 
-            ocultarTodo();
+            console.log("Recibiendo contenido:", payload);
+            ocultarTodo(); // Limpia la pantalla antes de mostrar lo nuevo
 
-            // CASO 1: GALERÍA
+            // CASO A: ES UNA GALERÍA DE IMÁGENES
             if (payload.type === 'gallery') {
                 const wrapper = document.getElementById('galeria-contenido');
                 wrapper.innerHTML = '';
+                
+                // Crear las diapositivas
                 payload.urls.forEach(url => {
                     wrapper.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
                 });
 
                 document.getElementById('vista-galeria').style.display = 'block';
 
+                // Si ya existía un carrusel, lo destruimos para crear uno nuevo limpio
                 if (swiper) swiper.destroy(true, true);
                 
                 const swiperContainer = document.querySelector('.mySwiper');
                 let swiperOptions = {
-                    effect: "fade", loop: true,
+                    effect: "fade", // Efecto desvanecimiento elegante
+                    loop: true,
                     pagination: { el: ".swiper-pagination", clickable: true },
                     keyboard: { enabled: true } 
                 };
 
+                // Configurar Auto-Play si se solicitó
                 if (payload.options && payload.options.autoPlay) {
                     swiperContainer.classList.add('modo-auto');
                     swiperOptions.autoplay = {
@@ -197,27 +137,31 @@
 
                 swiper = new Swiper(".mySwiper", swiperOptions);
             } 
-            // CASO 2: VIDEO PRINCIPAL
+            
+            // CASO B: ES UN VIDEO
             else if (payload.type === 'video') {
                 const container = document.getElementById('vista-video');
                 container.style.display = 'flex';
                 
+                // Insertamos el video con Autoplay y Loop
                 container.innerHTML = `
                     <video id="video-display" controls autoplay muted loop playsinline preload="auto">
                         <source src="${payload.url}" type="video/mp4">
                     </video>
                 `;
                 
+                // Forzar play por si acaso el navegador se pone difícil
                 setTimeout(() => {
                     const v = document.getElementById('video-display');
-                    if(v) v.play().catch(e => console.log("Autoplay contenido bloqueado:", e));
+                    if(v) v.play().catch(e => console.log("Autoplay requiere interacción del usuario:", e));
                 }, 100);
             }
         });
 
+        // Función auxiliar para limpiar la vista
         function ocultarTodo() {
             document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
-            document.getElementById('vista-video').innerHTML = ''; 
+            document.getElementById('vista-video').innerHTML = ''; // Borrar video anterior para liberar memoria
         }
     </script>
 </body>

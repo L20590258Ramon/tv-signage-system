@@ -7,7 +7,6 @@
     <style>
         :root { --primary: #0056b3; --bg: #f4f7f6; --card-bg: #ffffff; --text: #333; }
         
-        /* CUERPO: Ajustado para permitir scroll en móviles */
         body { 
             font-family: 'Segoe UI', sans-serif; 
             background-color: var(--bg); 
@@ -15,13 +14,12 @@
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            min-height: 100vh; /* Permite crecer si es necesario */
+            min-height: 100vh; 
             color: var(--text);
-            padding: 15px; /* Margen de seguridad para bordes de celular */
+            padding: 15px; 
             box-sizing: border-box;
         }
         
-        /* TARJETA: Más flexible */
         .card { 
             background: var(--card-bg); 
             padding: 2.5rem; 
@@ -41,7 +39,6 @@
         
         label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: #555; }
         
-        /* INPUTS: Mejor tacto en móvil */
         input[type="text"], input[type="password"], input[type="number"], select, button { 
             width: 100%; 
             padding: 12px; 
@@ -49,10 +46,9 @@
             border: 1px solid #ddd; 
             border-radius: 6px; 
             box-sizing: border-box; 
-            font-size: 1rem; /* Evita zoom automático en iPhone */
+            font-size: 1rem; 
         }
         
-        /* Settings Box */
         .settings-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         
         .checkbox-row { display: flex; align-items: center; margin-bottom: 10px; }
@@ -78,34 +74,13 @@
         .error { color: #dc3545; }
         .timer { font-size: 0.85rem; color: #888; text-align: center; margin-top: 25px; }
 
-        /* --- RESPONSIVIDAD (MEDIA QUERIES) --- */
         @media (max-width: 600px) {
-            .card {
-                padding: 1.5rem; /* Menos relleno en celular */
-                max-width: 100%;
-            }
-            
+            .card { padding: 1.5rem; max-width: 100%; }
             h2 { font-size: 1.3rem; }
             .logo-img { max-width: 140px; }
-            
-            /* Ajuste para que la duración no se rompa en pantallas muy angostas */
-            .duration-input {
-                margin-left: 0;
-                margin-top: 10px;
-                background: rgba(0,0,0,0.03);
-                padding: 10px;
-                border-radius: 6px;
-                justify-content: center;
-            }
-            
-            .dashboard-header {
-                flex-direction: row; /* Mantener en fila */
-            }
-            
-            /* Botones más grandes para dedos */
-            button, select, input {
-                padding: 14px;
-            }
+            .duration-input { margin-left: 0; margin-top: 10px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; justify-content: center; }
+            .dashboard-header { flex-direction: row; }
+            button, select, input { padding: 14px; }
         }
     </style>
 </head>
@@ -132,16 +107,7 @@
         </div>
 
         <label>Target Display:</label>
-        <select id="targetSelect">
-            <option value="all">📡 ALL DISPLAYS</option>
-            <option value="CrossCutter">Cross Cutter</option>
-            <option value="Vulcas">Vulcas</option>
-            <option value="ProductionFloor">Production Floor</option>
-            <option value="Confections">Confections</option>
-            <option value="Kalandria">Kalandria</option>
-            <option value="Reception">Reception</option>
-            <option value="Extrusion">Extrusion</option>
-        </select>
+        <select id="targetSelect"></select>
 
         <label>Upload Content:</label>
         <div class="file-upload-wrapper" onclick="document.getElementById('fileInput').click()">
@@ -172,13 +138,22 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURATION ---
+        // --- CONFIGURACIÓN DE NOMBRES BONITOS ---
+        const DISPLAY_NAMES = {
+            'CrossCutter': 'Cross Cutter',
+            'Vulcas': 'Vulcas',
+            'ProductionFloor': 'Production Floor',
+            'Confections': 'Confections',
+            'Kalandria': 'Kalandria',
+            'Reception': 'Reception',
+            'Extrusion': 'Extrusion'
+        };
+
         const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; 
         let authToken = null;
         let inactivityTimer;
         let countdownInterval;
 
-        // UI Helper: Show selected files name
         document.getElementById('fileInput').addEventListener('change', function(){
             const list = document.getElementById('file-list');
             if(this.files.length > 0) {
@@ -188,7 +163,6 @@
             }
         });
 
-        // --- 2. INTERFACE LOGIC ---
         function toggleDurationInput() {
             const isChecked = document.getElementById('autoPlayCheck').checked;
             const container = document.getElementById('durationContainer');
@@ -196,7 +170,7 @@
             else container.classList.add('disabled');
         }
 
-        // --- 3. LOGIN / LOGOUT LOGIC ---
+        // --- 3. LOGIN LÓGICA (ACTUALIZADA PARA RBAC) ---
         async function login() {
             const u = document.getElementById('user').value;
             const p = document.getElementById('pass').value;
@@ -208,16 +182,59 @@
             errorDiv.innerText = "Authenticating...";
 
             try {
-                const res = await fetch('/api/login', { method: 'POST', headers: { 'Authorization': token } });
+                // Ahora esperamos que el server nos devuelva JSON con los permisos
+                const res = await fetch('/api/login', { 
+                    method: 'POST', 
+                    headers: { 'Authorization': token } 
+                });
+
                 if (res.ok) {
+                    const data = await res.json(); // Leemos la respuesta del server
                     authToken = token;
+                    
+                    // AQUÍ ESTÁ LA MAGIA: Construimos el menú según lo que dijo el server
+                    setupTvDropdown(data.allowedTVs);
+                    
                     mostrarDashboard();
                     errorDiv.innerText = "";
                 } else {
                     errorDiv.innerText = "Incorrect username or password";
                 }
             } catch (e) {
+                console.error(e);
                 errorDiv.innerText = "Server connection error";
+            }
+        }
+
+        // --- FUNCION NUEVA: CREAR MENU DINAMICO ---
+        function setupTvDropdown(allowedList) {
+            const select = document.getElementById('targetSelect');
+            select.innerHTML = ''; // Borramos cualquier opción vieja
+
+            // Si es ADMIN, tiene permiso 'all'
+            if (allowedList.includes('all')) {
+                const opt = document.createElement('option');
+                opt.value = 'all';
+                opt.text = '📡 ALL DISPLAYS (Admin)';
+                select.appendChild(opt);
+                
+                // Agregamos todas las demás
+                Object.keys(DISPLAY_NAMES).forEach(key => {
+                    const el = document.createElement('option');
+                    el.value = key;
+                    el.text = DISPLAY_NAMES[key];
+                    select.appendChild(el);
+                });
+            } else {
+                // Si es usuario normal (RH, Logística), solo agregamos las suyas
+                allowedList.forEach(tvId => {
+                    if(DISPLAY_NAMES[tvId]) {
+                        const el = document.createElement('option');
+                        el.value = tvId;
+                        el.text = DISPLAY_NAMES[tvId];
+                        select.appendChild(el);
+                    }
+                });
             }
         }
 
@@ -238,12 +255,10 @@
             resetInactivityTimer(); 
         }
 
-        // --- 4. UPLOAD LOGIC ---
         async function publicar() {
             const input = document.getElementById('fileInput');
             const target = document.getElementById('targetSelect').value;
             const status = document.getElementById('status-msg');
-            
             const isAuto = document.getElementById('autoPlayCheck').checked;
             const duration = document.getElementById('durationValue').value;
 
@@ -274,6 +289,8 @@
                     status.innerText = "✅ Sent successfully!"; status.className = "success"; 
                     input.value = "";
                     document.getElementById('file-list').innerText = "";
+                } else if (res.status === 403) {
+                    status.innerText = "⛔ No permission for this TV."; status.className = "error";
                 } else { throw new Error(); }
             } catch (e) {
                 status.innerText = "❌ Error uploading content."; status.className = "error";
@@ -282,10 +299,8 @@
             }
         }
 
-        // --- 5. TIMER LOGIC ---
         function resetInactivityTimer() {
             if (!authToken) return;
-
             clearTimeout(inactivityTimer);
             clearInterval(countdownInterval);
 
