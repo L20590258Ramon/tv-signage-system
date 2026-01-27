@@ -25,7 +25,7 @@ const USUARIOS = {
     },
     "PRODUCTION": { 
         pass: "Production_0Pm**", 
-        allowed: ['Confection'] // Only production areas
+        allowed: ['Confections'] // Only production areas
     },
     
     "RH": { 
