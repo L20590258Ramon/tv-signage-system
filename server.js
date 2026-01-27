@@ -15,13 +15,13 @@ let estadoActual = {};
 // --- 1. USER CONFIGURATION ---
 // We changed this from a simple string to an Object to store permissions.
 const USUARIOS = {
-    "ADMIN": { 
+    "IT": { 
         pass: "IT_0Pm**", 
         allowed: ['all'] // Can control everything
     },
     "LOGISTIC": { 
         pass: "Logis_0Pm**", 
-        allowed: ['Vulcas', 'CrossCutter', 'Confection'] // Only production areas
+        allowed: ['Vulcas', 'CrossCutter', 'Confections'] // Only production areas
     },
     "PRODUCTION": { 
         pass: "Production_0Pm**", 
@@ -202,4 +202,4 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(PORT, () => console.log(`Sistema Optibelt v2.0 (RBAC Active) listo en puerto ${PORT}`));
+http.listen(PORT, () => console.log(`Sistema Optibelt v2.0.2 listo en puerto ${PORT}`));
