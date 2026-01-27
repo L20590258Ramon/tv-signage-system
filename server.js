@@ -21,11 +21,11 @@ const USUARIOS = {
     },
     "LOGISTIC": { 
         pass: "Logis_0Pm**", 
-        allowed: ['Vulcas', 'CrossCutter', 'Confections'] // Only production areas
+        allowed: ['Vulcas', 'CrossCutter'] // Only production areas
     },
     "PRODUCTION": { 
         pass: "Production_0Pm**", 
-        allowed: ['Vulcas', 'CrossCutter', 'Confection'] // Only production areas
+        allowed: ['Confection'] // Only production areas
     },
     
     "RH": { 
@@ -202,4 +202,4 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(PORT, () => console.log(`Sistema Optibelt v2.0.2 listo en puerto ${PORT}`));
+http.listen(PORT, () => console.log(`Sistema Optibelt v2.0.4 listo en puerto ${PORT}`));
