@@ -10,9 +10,10 @@ const PORT = 3000;
 
 // USER CONFIGURATION (RBAC) - Kept same as before
 const USUARIOS = {
-    "ADMIN": { pass: "IT_0Pm**", allowed: ['all'] },
-    "LOGISTIC": { pass: "Logis_0Pm**", allowed: ['Vulcas', 'CrossCutter', 'ProductionFloor'] },
-    "RH": { pass: "Rh2025**", allowed: ['Reception', 'Confections'] },
+    "IT": { pass: "IT_0Pm**", allowed: ['all'] },
+    "PRODUCTION": { pass: "Prod_0Pm**", allowed: ['Extrusion'] },
+    "LOGISTIC": { pass: "Logis_0Pm**", allowed: ['Vulcas', 'CrossCutter', 'Confections'] },
+    "RH": { pass: "Rh2025**", allowed: ['Reception'] },
 };
 
 // --- MULTER CONFIG ---
