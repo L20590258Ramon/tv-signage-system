@@ -2,167 +2,223 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Optibelt TV Display</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optibelt TV Player</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     
     <style>
-        /* Estilos Generales: Pantalla completa, fondo negro, sin cursor */
         body { 
-            margin: 0; 
-            padding: 0;
-            overflow: hidden; 
-            background: #000; 
+            margin: 0; overflow: hidden; background: #000; 
             font-family: 'Segoe UI', sans-serif; 
-            width: 100vw;
-            height: 100vh;
-            cursor: none; /* Oculta el mouse para que se vea pro */
+            color: white;
         }
 
-        .view-section { display: none; min-height: 100vh; height: 100vh; width: 100vw; }
-
-        /* --- Estilos del Carrusel (Galería) --- */
-        .swiper { width: 100%; height: 100%; }
-        .swiper-slide { background: #000; display: flex; justify-content: center; align-items: center; }
+        /* --- MENU SCREEN --- */
+        #menu-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #004e92 0%, #000428 100%);
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 2000;
+        }
         
-        .swiper-slide img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; /* Ajusta la imagen sin deformarla */
-            image-rendering: -webkit-optimize-contrast; 
+        h1 { margin-bottom: 40px; font-size: 3rem; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        .menu-buttons { display: flex; gap: 30px; }
+        
+        .btn-select {
+            padding: 20px 40px;
+            font-size: 1.5rem;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            width: 200px;
         }
+        
+        .btn-select span { font-size: 3rem; }
+        .btn-select:hover { background: white; color: #0056b3; transform: scale(1.05); }
 
-        /* Flechas de navegación (solo visibles si no es automático) */
-        .swiper-button-next, .swiper-button-prev { color: white; transform: scale(1.5); text-shadow: 0 0 5px black; }
-        .modo-auto .swiper-button-next, .modo-auto .swiper-button-prev { display: none !important; }
-
-        /* --- Estilos del Video Principal --- */
-        #vista-video { display: flex; justify-content: center; align-items: center; background: #000; }
+        /* --- PLAYER SECTIONS --- */
+        .view-section { display: none; width: 100vw; height: 100vh; }
+        
+        /* Video */
         video { width: 100%; height: 100%; object-fit: contain; }
 
-        /* Etiqueta pequeña con el ID de la pantalla (abajo derecha) */
-        #id-pantalla { 
-            position: absolute; 
-            bottom: 20px; 
-            right: 20px; 
-            color: rgba(255,255,255,0.2); 
-            font-size: 18px; 
-            z-index: 999; 
+        /* Swiper (Images) */
+        .swiper { width: 100%; height: 100%; }
+        .swiper-slide { background: #000; display: flex; justify-content: center; align-items: center; }
+        .swiper-slide img { width: 100%; height: 100%; object-fit: contain; }
+
+        /* --- CONTROLS --- */
+        #back-btn {
+            position: fixed; top: 20px; left: 20px;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: 1px solid white;
+            border-radius: 30px;
+            cursor: pointer;
+            z-index: 3000;
+            display: none; /* Hidden on menu */
             font-weight: bold;
-            text-transform: uppercase;
-            pointer-events: none;
         }
+        #back-btn:hover { background: white; color: black; }
+
+        /* Error Message */
+        #error-msg { position: fixed; bottom: 20px; color: #ff6b6b; font-size: 1.2rem; display: none; }
     </style>
 </head>
 <body>
 
+    <div id="menu-screen">
+        <img src="logo.png" style="max-width: 150px; margin-bottom: 20px;" onerror="this.style.display='none'">
+        <h1>Select Mode</h1>
+        <div class="menu-buttons">
+            <button class="btn-select" onclick="loadLibrary('video')">
+                <span>🎬</span> Videos
+            </button>
+            <button class="btn-select" onclick="loadLibrary('image')">
+                <span>🖼️</span> Images
+            </button>
+        </div>
+        <div id="error-msg"></div>
+    </div>
+
+    <button id="back-btn" onclick="showMenu()">🏠 Menu</button>
+
     <div id="vista-galeria" class="view-section">
         <div class="swiper mySwiper">
-            <div class="swiper-wrapper" id="galeria-contenido">
-                </div>
-            <div class="swiper-button-next"></div>
-            <div class="swiper-button-prev"></div>
+            <div class="swiper-wrapper" id="galeria-contenido"></div>
             <div class="swiper-pagination"></div>
         </div>
     </div>
 
-    <div id="vista-video" class="view-section"></div>
-
-    <div id="id-pantalla">Cargando ID...</div>
+    <div id="vista-video" class="view-section">
+        <video id="main-player" controls autoplay muted playsinline></video>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
     <script>
-        // --- CONEXIÓN CON EL SERVIDOR ---
         const socket = io();
-        
-        // Obtener el ID de la URL (ej: tv.html?id=Reception)
-        const params = new URLSearchParams(window.location.search);
-        const myId = params.get('id') || 'general';
-        
-        // Mostrar ID en pantalla discretamente
-        document.getElementById('id-pantalla').innerText = myId;
+        let swiperInstance;
+        let videoList = [];
+        let currentVideoIndex = 0;
+        const videoPlayer = document.getElementById('main-player');
 
-        // Al conectar, unirse al "Cuarto" (Room) específico
-        socket.on('connect', () => {
-            console.log(`Conectado al servidor. ID: ${myId}`);
-            socket.emit('join', myId);
-        });
+        // 1. FUNCIONES DE INTERFAZ
+        function showMenu() {
+            document.getElementById('menu-screen').style.display = 'flex';
+            document.getElementById('back-btn').style.display = 'none';
+            stopAllPlayers();
+        }
 
-        let swiper; // Variable para guardar la instancia del carrusel
+        function hideMenu() {
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('back-btn').style.display = 'block';
+        }
 
-        // --- RECIBIR CONTENIDO NUEVO ---
-        socket.on('contentUpdate', (payload) => {
-            // Doble verificación: Solo procesar si es para MÍ o para TODOS
-            if(payload.target !== 'all' && payload.target !== myId) return;
-
-            console.log("Recibiendo contenido:", payload);
-            ocultarTodo(); // Limpia la pantalla antes de mostrar lo nuevo
-
-            // CASO A: ES UNA GALERÍA DE IMÁGENES
-            if (payload.type === 'gallery') {
-                const wrapper = document.getElementById('galeria-contenido');
-                wrapper.innerHTML = '';
-                
-                // Crear las diapositivas
-                payload.urls.forEach(url => {
-                    wrapper.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
-                });
-
-                document.getElementById('vista-galeria').style.display = 'block';
-
-                // Si ya existía un carrusel, lo destruimos para crear uno nuevo limpio
-                if (swiper) swiper.destroy(true, true);
-                
-                const swiperContainer = document.querySelector('.mySwiper');
-                let swiperOptions = {
-                    effect: "fade", // Efecto desvanecimiento elegante
-                    loop: true,
-                    pagination: { el: ".swiper-pagination", clickable: true },
-                    keyboard: { enabled: true } 
-                };
-
-                // Configurar Auto-Play si se solicitó
-                if (payload.options && payload.options.autoPlay) {
-                    swiperContainer.classList.add('modo-auto');
-                    swiperOptions.autoplay = {
-                        delay: payload.options.duration * 1000, 
-                        disableOnInteraction: false 
-                    };
-                } else {
-                    swiperContainer.classList.remove('modo-auto');
-                    swiperOptions.navigation = { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" };
-                }
-
-                swiper = new Swiper(".mySwiper", swiperOptions);
-            } 
+        function stopAllPlayers() {
+            // Stop Video
+            videoPlayer.pause();
+            videoPlayer.src = "";
+            document.getElementById('vista-video').style.display = 'none';
             
-            // CASO B: ES UN VIDEO
-            else if (payload.type === 'video') {
-                const container = document.getElementById('vista-video');
-                container.style.display = 'flex';
-                
-                // Insertamos el video con Autoplay y Loop
-                container.innerHTML = `
-                    <video id="video-display" controls autoplay muted loop playsinline preload="auto">
-                        <source src="${payload.url}" type="video/mp4">
-                    </video>
-                `;
-                
-                // Forzar play por si acaso el navegador se pone difícil
-                setTimeout(() => {
-                    const v = document.getElementById('video-display');
-                    if(v) v.play().catch(e => console.log("Autoplay requiere interacción del usuario:", e));
-                }, 100);
+            // Stop Swiper
+            if (swiperInstance) swiperInstance.destroy(true, true);
+            document.getElementById('vista-galeria').style.display = 'none';
+        }
+
+        // 2. CARGAR LIBRERÍA DEL SERVIDOR
+        async function loadLibrary(type) {
+            try {
+                const res = await fetch('/api/library');
+                const library = await res.json();
+
+                if (type === 'video') {
+                    if (library.videos.length === 0) throw new Error("No videos found on server.");
+                    startVideoLoop(library.videos);
+                } else {
+                    if (library.images.length === 0) throw new Error("No images found on server.");
+                    startImageLoop(library.images);
+                }
+                hideMenu();
+
+            } catch (e) {
+                const errDiv = document.getElementById('error-msg');
+                errDiv.style.display = 'block';
+                errDiv.innerText = e.message;
+                setTimeout(() => errDiv.style.display = 'none', 3000);
+            }
+        }
+
+        // 3. LÓGICA DE VIDEO (PLAYLIST LOOP)
+        function startVideoLoop(videos) {
+            videoList = videos; // Guardamos la lista
+            currentVideoIndex = 0;
+            
+            document.getElementById('vista-video').style.display = 'flex';
+            
+            playCurrentVideo();
+
+            // Evento: Cuando termine uno, sigue el siguiente
+            videoPlayer.onended = () => {
+                currentVideoIndex++;
+                if (currentVideoIndex >= videoList.length) {
+                    currentVideoIndex = 0; // Loop al inicio
+                }
+                playCurrentVideo();
+            };
+        }
+
+        function playCurrentVideo() {
+            videoPlayer.src = videoList[currentVideoIndex];
+            videoPlayer.play().catch(e => console.log("Click required for audio", e));
+        }
+
+        // 4. LÓGICA DE IMÁGENES (SWIPER)
+        function startImageLoop(images) {
+            const wrapper = document.getElementById('galeria-contenido');
+            wrapper.innerHTML = '';
+            
+            images.forEach(url => {
+                wrapper.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
+            });
+
+            document.getElementById('vista-galeria').style.display = 'block';
+
+            swiperInstance = new Swiper(".mySwiper", {
+                effect: "fade",
+                loop: true,
+                pagination: { clickable: true },
+                autoplay: {
+                    delay: 5000, // 5 segundos por foto
+                    disableOnInteraction: false
+                }
+            });
+        }
+
+        // 5. SOCKET (OPCIONAL: Si el Admin manda algo urgente, interrumpe)
+        socket.on('contentUpdate', (payload) => {
+            console.log("Admin forced update:", payload);
+            hideMenu();
+            stopAllPlayers();
+            // Aquí reutilizamos la lógica simple para mostrar lo que mandó el admin
+            // (Si quieres que el admin NO interrumpa, borra esta parte del socket)
+            if(payload.type === 'video') {
+                videoList = [payload.url]; // Solo reproduce este video
+                currentVideoIndex = 0;
+                document.getElementById('vista-video').style.display = 'flex';
+                playCurrentVideo();
+            } else {
+                startImageLoop(payload.urls);
             }
         });
 
-        // Función auxiliar para limpiar la vista
-        function ocultarTodo() {
-            document.querySelectorAll('.view-section').forEach(el => el.style.display = 'none');
-            document.getElementById('vista-video').innerHTML = ''; // Borrar video anterior para liberar memoria
-        }
     </script>
 </body>
 </html>
