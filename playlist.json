@@ -1,9 +1,7 @@
 {
   "IT": {
-    "activeImages": [
-      "/uploads/IT/image (5).png",
-      "/uploads/IT/opm.jpg"
-    ],
-    "interval": 12000
+    "activeImages": [],
+    "interval": 12000,
+    "isAuto": false
   }
 }

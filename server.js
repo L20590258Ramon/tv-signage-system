@@ -10,7 +10,7 @@ const PORT = 3000;
 const DATA_FILE = 'playlist.json';
 
 const USUARIOS = {
-    "IT":      { pass: "IT_0Pm**",    folder: 'IT' },
+    "IT":         { pass: "IT_0Pm**",    folder: 'IT' },
     "PRODUCTION": { pass: "Prod_0Pm**",  folder: 'Production' },
     "RH":         { pass: "Rh2025**",    folder: 'RH' },
     "LOGISTIC":   { pass: "Logis_0Pm**", folder: 'Logistic' },
@@ -56,12 +56,11 @@ app.get('/api/admin-content', portero, (req, res) => {
     
     let files = [];
     try {
-        // CORRECCIÓN DE RUTAS: Forzamos '/' para que el navegador las entienda
         files = fs.readdirSync(dir).map(f => `/uploads/${folder}/${f}`);
     } catch(e) { files = []; }
 
-    // Leemos config o valores por defecto (isAuto: false por defecto si quieres manual)
-    const config = playlists[folder] || { activeImages: [], interval: 10000, isAuto: false };
+    // AQUI ESTABA EL ERROR: Necesitamos leer activeVideos tambien
+    const config = playlists[folder] || { activeImages: [], activeVideos: [], interval: 10000, isAuto: false };
 
     res.json({ allFiles: files, config: config });
 });
@@ -69,10 +68,12 @@ app.get('/api/admin-content', portero, (req, res) => {
 app.post('/api/save-config', portero, (req, res) => {
     const folder = req.userFolder;
     
+    // AQUI GUARDAMOS LA LISTA DE VIDEOS SELECCIONADOS
     playlists[folder] = {
         activeImages: req.body.activeImages, 
+        activeVideos: req.body.activeVideos, // <--- ESTO FALTABA
         interval: req.body.interval || 10000,
-        isAuto: req.body.isAuto // Guardamos si es automático o manual
+        isAuto: req.body.isAuto 
     };
     fs.writeFileSync(DATA_FILE, JSON.stringify(playlists, null, 2));
 
@@ -82,22 +83,20 @@ app.post('/api/save-config', portero, (req, res) => {
 
 app.get('/api/tv-content', (req, res) => {
     const folder = req.query.folder || 'General';
-    const config = playlists[folder] || { activeImages: [], interval: 10000, isAuto: false };
+    const config = playlists[folder] || { activeImages: [], activeVideos: [], interval: 10000, isAuto: false };
     
-    // Obtenemos videos para el menú
-    const dir = path.join(__dirname, 'uploads', folder);
-    let allVideos = [];
-    try {
-        allVideos = fs.readdirSync(dir)
-            .filter(f => f.match(/\.(mp4|mov|webm)$/i))
-            .map(f => `/uploads/${folder}/${f}`);
-    } catch (e) {}
+    // FILTRADO DE SEGURIDAD:
+    // Solo enviamos los videos que estan en la lista 'activeVideos'
+    const validVideos = (config.activeVideos || []).filter(url => {
+        const localPath = path.join(__dirname, url);
+        return fs.existsSync(localPath);
+    });
 
     res.json({
         images: config.activeImages,
-        videos: allVideos,
+        videos: validVideos, // <--- ENVIAMOS SOLO LOS APROBADOS
         interval: config.interval,
-        isAuto: config.isAuto // Enviamos este dato a la TV
+        isAuto: config.isAuto 
     });
 });
 
