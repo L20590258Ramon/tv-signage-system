@@ -2,19 +2,89 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Optibelt Display</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
-        .swiper { width: 100vw; height: 100vh; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Roboto', sans-serif; }
+        
+        /* --- 1. CARRUSEL DE IMÁGENES --- */
+        .swiper { width: 100vw; height: 100vh; z-index: 1; }
         .swiper-slide { display: flex; justify-content: center; align-items: center; background: black; }
         .swiper-slide img { width: 100%; height: 100%; object-fit: contain; }
-        
-        /* Flechas de navegación (Por defecto ocultas, Swiper las maneja) */
-        .swiper-button-next, .swiper-button-prev { color: white; opacity: 0.5; }
-        .swiper-button-next:hover, .swiper-button-prev:hover { opacity: 1; }
 
-        /* ... (Estilos de menú y video iguales) ... */
+        /* Flechas de navegación (Estilo sutil) */
+        .swiper-button-next, .swiper-button-prev { color: rgba(255, 255, 255, 0.7); transform: scale(0.8); }
+        .swiper-button-next:hover, .swiper-button-prev:hover { color: white; transform: scale(1); }
+
+        /* --- 2. BOTÓN FLOTANTE "VER VIDEOS" --- */
+        #btn-tutorials {
+            position: absolute; 
+            bottom: 40px; 
+            right: 40px; 
+            z-index: 100; /* Encima de las fotos */
+            
+            background: rgba(0, 78, 100, 0.9); /* Azul Optibelt oscuro */
+            color: white; 
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 15px 30px; 
+            border-radius: 50px; 
+            font-size: 1.2rem; 
+            font-weight: bold;
+            cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s, background 0.2s;
+            display: none; /* Se oculta por defecto hasta que carguen videos */
+            backdrop-filter: blur(5px);
+        }
+        #btn-tutorials:hover { transform: scale(1.05); background: #84bd00; border-color: white; }
+        #btn-tutorials:active { transform: scale(0.95); }
+
+        /* --- 3. MENÚ DE VIDEOS (PANTALLA COMPLETA) --- */
+        #video-menu {
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95); /* Fondo oscuro elegante */
+            z-index: 200; 
+            padding: 40px; 
+            box-sizing: border-box; 
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+        
+        .menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+        .menu-header h2 { color: white; margin: 0; font-size: 2rem; }
+        .btn-close { background: transparent; border: 1px solid #fff; color: white; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-size: 1rem; }
+        .btn-close:hover { background: white; color: black; }
+
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
+        
+        /* Tarjeta de Video */
+        .video-card { 
+            background: #1e293b; 
+            border-radius: 12px; 
+            padding: 20px; 
+            cursor: pointer; 
+            text-align: center; 
+            color: white; 
+            border: 1px solid #334155; 
+            transition: 0.3s;
+        }
+        .video-card:hover { transform: translateY(-5px); background: #004e64; border-color: #84bd00; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .icon-play { font-size: 3rem; margin-bottom: 15px; display: block; opacity: 0.8; }
+        .vid-title { font-size: 1.1rem; font-weight: 500; word-break: break-word; }
+
+        /* --- 4. REPRODUCTOR DE VIDEO --- */
+        #player-view { display: none; position: fixed; inset: 0; background: black; z-index: 300; }
+        video { width: 100%; height: 100%; }
+        #btn-close-player { 
+            position: absolute; top: 30px; left: 30px; z-index: 301;
+            background: rgba(0,0,0,0.5); color: white; border: 1px solid white;
+            padding: 10px 25px; border-radius: 5px; cursor: pointer; font-size: 1.2rem;
+        }
+        #btn-close-player:hover { background: red; border-color: red; }
     </style>
 </head>
 <body>
@@ -26,6 +96,23 @@
         <div class="swiper-pagination"></div>
     </div>
 
+    <button id="btn-tutorials" onclick="openMenu()">
+        📺 Ver Tutoriales
+    </button>
+
+    <div id="video-menu">
+        <div class="menu-header">
+            <h2>Seleccione un Video</h2>
+            <button class="btn-close" onclick="closeMenu()">✖ Cerrar Menú</button>
+        </div>
+        <div class="video-grid" id="video-grid"></div>
+    </div>
+
+    <div id="player-view">
+        <button id="btn-close-player" onclick="stopVideo()">⏹ Regresar al Menú</button>
+        <video id="main-video" controls></video>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
@@ -35,7 +122,13 @@
         const myFolder = params.get('folder') || 'General';
         let swiper;
 
-        socket.on('refresh_' + myFolder, () => { loadContent(); });
+        // Escuchar recargas desde el servidor
+        socket.on('refresh_' + myFolder, () => {
+            console.log("Detectado cambio en contenido. Recargando...");
+            loadContent();
+        });
+
+        // Cargar al iniciar
         window.onload = loadContent;
 
         async function loadContent() {
@@ -43,58 +136,104 @@
                 const res = await fetch(`/api/tv-content?folder=${myFolder}`);
                 const data = await res.json();
 
-                // 1. Renderizar Imágenes
+                // --- A. GESTIÓN DE IMÁGENES ---
                 const container = document.getElementById('slides-container');
                 container.innerHTML = '';
                 
-                // Si la ruta viene con backslash (error viejo), la corregimos aquí también por seguridad
-                const safeImages = data.images.map(url => url.replace(/\\/g, '/'));
+                const safeImages = (data.images || []).map(url => url.replace(/\\/g, '/'));
 
                 if(safeImages.length === 0) {
-                    container.innerHTML = '<div class="swiper-slide" style="color:gray">Esperando contenido...</div>';
+                    container.innerHTML = '<div class="swiper-slide" style="color:gray; font-size:2rem;">Logo Empresa (Sin contenido)</div>';
                 } else {
                     safeImages.forEach(url => {
                         container.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
                     });
                 }
 
-                // 2. CONFIGURAR SWIPER (Aquí está la lógica Auto vs Manual)
+                // Configurar Swiper (Auto vs Manual)
                 if(swiper) swiper.destroy(true, true);
 
                 let swiperConfig = {
-                    effect: "fade",
+                    effect: "fade", // Efecto desvanecer
                     loop: true,
-                    // Habilitar teclado (Flechas)
                     keyboard: { enabled: true },
-                    // Habilitar botones en pantalla
                     navigation: { nextEl: ".swiper-button-next", prevEl: ".swiper-button-prev" },
                     pagination: { el: ".swiper-pagination", clickable: true },
                 };
 
-                // Si el Admin activó Automático:
                 if (data.isAuto) {
-                    swiperConfig.autoplay = { 
-                        delay: data.interval, 
-                        disableOnInteraction: false 
-                    };
-                    // Ocultamos las flechas visualmente si es automático (opcional)
+                    // Modo Automático (Ocultamos flechas, activamos timer)
+                    swiperConfig.autoplay = { delay: data.interval, disableOnInteraction: false };
                     document.querySelector('.swiper-button-next').style.display = 'none';
                     document.querySelector('.swiper-button-prev').style.display = 'none';
                 } else {
-                    // Si es Manual:
-                    delete swiperConfig.autoplay; // Aseguramos que no se mueva solo
-                    // Mostramos flechas
+                    // Modo Manual (Sin timer, flechas visibles)
                     document.querySelector('.swiper-button-next').style.display = 'block';
                     document.querySelector('.swiper-button-prev').style.display = 'block';
                 }
 
                 swiper = new Swiper(".mySwiper", swiperConfig);
 
-                // ... (Lógica de videos igual) ...
 
-            } catch(e) { console.error(e); }
+                // --- B. GESTIÓN DE VIDEOS (Aquí estaba el detalle) ---
+                const vGrid = document.getElementById('video-grid');
+                vGrid.innerHTML = '';
+                const btn = document.getElementById('btn-tutorials');
+                
+                // Filtramos rutas seguras
+                const safeVideos = (data.videos || []).map(url => url.replace(/\\/g, '/'));
+
+                if(safeVideos.length > 0) {
+                    // SI HAY VIDEOS ACTIVOS: MOSTRAR BOTÓN
+                    btn.style.display = 'block';
+                    
+                    // Llenar el menú
+                    safeVideos.forEach(url => {
+                        const name = url.split('/').pop();
+                        const card = document.createElement('div');
+                        card.className = 'video-card';
+                        card.innerHTML = `
+                            <span class="icon-play">▶</span>
+                            <div class="vid-title">${name}</div>
+                        `;
+                        card.onclick = () => playVideo(url);
+                        vGrid.appendChild(card);
+                    });
+                } else {
+                    // SI NO HAY VIDEOS ACTIVOS: OCULTAR BOTÓN
+                    btn.style.display = 'none';
+                }
+
+            } catch(e) { console.error("Error cargando contenido:", e); }
         }
-        // ... (Funciones de video) ...
+
+        // FUNCIONES DE INTERFAZ
+        function openMenu() {
+            if(swiper && swiper.autoplay.running) swiper.autoplay.stop(); // Pausar fotos
+            document.getElementById('video-menu').style.display = 'block';
+        }
+
+        function closeMenu() {
+            document.getElementById('video-menu').style.display = 'none';
+            if(swiper && swiper.params.autoplay.delay) swiper.autoplay.start(); // Reanudar fotos
+        }
+
+        function playVideo(url) {
+            const v = document.getElementById('main-video');
+            v.src = url;
+            document.getElementById('player-view').style.display = 'block';
+            v.play();
+            v.onended = stopVideo; // Al terminar, cerrar solo
+        }
+
+        function stopVideo() {
+            const v = document.getElementById('main-video');
+            v.pause();
+            v.src = ""; // Liberar memoria
+            document.getElementById('player-view').style.display = 'none';
+            // No cerramos el menú, por si quiere ver otro video.
+            // Si prefieres que cierre todo, llama a closeMenu() aquí.
+        }
     </script>
 </body>
 </html>

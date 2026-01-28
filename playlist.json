@@ -2,8 +2,10 @@
   "IT": {
     "activeImages": [
       "/uploads/IT/image (5).png",
-      "/uploads/IT/opm.jpg"
+      "/uploads/IT/opm.jpg",
+      "/uploads/IT/opm_big.jpg"
     ],
-    "interval": 12000
+    "interval": 12000,
+    "isAuto": true
   }
 }

@@ -6,95 +6,35 @@
     <title>Optibelt Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --opti-green: #84bd00; /* Verde corporativo aprox */
-            --opti-dark: #004e64;  /* Azul oscuro corporativo */
-            --bg-light: #f4f6f8;
-            --text-main: #333;
-        }
-
+        :root { --opti-green: #84bd00; --opti-dark: #004e64; --bg-light: #f4f6f8; --text-main: #333; }
         body { margin: 0; font-family: 'Roboto', sans-serif; background-color: var(--bg-light); color: var(--text-main); }
         
-        /* --- ESTILOS DEL LOGIN (PANTALLA COMPLETA) --- */
-        #login-view {
-            height: 100vh;
-            width: 100vw;
-            background: linear-gradient(135deg, var(--opti-dark) 0%, #002a36 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: fixed;
-            top: 0; left: 0; z-index: 1000;
-        }
-
-        .login-card {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 380px;
-            text-align: center;
-        }
-
+        #login-view { height: 100vh; width: 100vw; background: linear-gradient(135deg, var(--opti-dark) 0%, #002a36 100%); display: flex; justify-content: center; align-items: center; position: fixed; top: 0; left: 0; z-index: 1000; }
+        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); width: 100%; max-width: 380px; text-align: center; }
         .logo-area img { max-width: 180px; margin-bottom: 20px; }
-        .login-title { margin-bottom: 25px; color: var(--opti-dark); font-weight: 500; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 12px 15px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn-login { width: 100%; background: var(--opti-green); color: white; border: none; padding: 12px; margin-top: 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-login:hover { background: #73a500; }
 
-        input[type="text"], input[type="password"] {
-            width: 100%; padding: 12px 15px; margin: 8px 0;
-            border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;
-            font-size: 14px; transition: 0.3s;
-        }
-        input:focus { border-color: var(--opti-green); outline: none; box-shadow: 0 0 0 3px rgba(132, 189, 0, 0.1); }
-
-        .btn-login {
-            width: 100%; background: var(--opti-green); color: white; border: none;
-            padding: 12px; margin-top: 20px; border-radius: 6px; font-weight: bold;
-            font-size: 16px; cursor: pointer; transition: 0.3s;
-        }
-        .btn-login:hover { background: #73a500; transform: translateY(-1px); }
-
-        /* --- ESTILOS DEL DASHBOARD --- */
         .hidden { display: none !important; }
-        
-        .top-bar {
-            background: white; padding: 15px 30px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .top-bar h1 { margin: 0; font-size: 1.2rem; color: var(--opti-dark); }
-        .btn-logout { background: #eee; color: #555; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-
+        .top-bar { background: white; padding: 15px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
         .dashboard-container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
-
-        .card {
-            background: white; border-radius: 10px; padding: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px;
-        }
-        
+        .card { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
         .card h3 { margin-top: 0; border-bottom: 2px solid var(--bg-light); padding-bottom: 15px; color: var(--opti-dark); }
         
-        /* Grid de Imágenes */
         .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-top: 15px; }
-        .img-item { 
-            position: relative; height: 90px; border-radius: 6px; overflow: hidden; 
-            cursor: pointer; border: 2px solid transparent; 
-        }
+        .img-item { position: relative; height: 90px; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; }
         .img-item img { width: 100%; height: 100%; object-fit: cover; opacity: 0.7; transition: 0.3s; }
-        .img-item:hover img { opacity: 1; }
-        
-        /* Checkbox grande sobre la imagen */
-        .img-item input[type="checkbox"] {
-            position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; z-index: 10; cursor: pointer;
-        }
-        /* Resaltar si está seleccionado */
         .img-item:has(input:checked) { border-color: var(--opti-green); }
         .img-item:has(input:checked) img { opacity: 1; }
+        .img-item input[type="checkbox"] { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; z-index: 10; cursor: pointer; }
 
-        /* Controles de Configuración */
+        /* ESTILO NUEVO PARA VIDEO CON CHECKBOX */
+        .video-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .video-item:hover { background: #f9f9f9; }
+        .video-item input { margin-right: 15px; width: 18px; height: 18px; cursor: pointer; }
+
         .config-row { display: flex; align-items: center; justify-content: space-between; background: #f9fbfd; padding: 15px; border-radius: 8px; border: 1px solid #e1e4e8; }
-        
-        /* Switch Toggle */
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; margin-left: 10px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
@@ -102,10 +42,7 @@
         input:checked + .slider { background-color: var(--opti-green); }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        .btn-action { 
-            background: var(--opti-dark); color: white; border: none; padding: 10px 20px; 
-            border-radius: 5px; cursor: pointer; font-size: 0.9rem; 
-        }
+        .btn-action { background: var(--opti-dark); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
         .btn-save { width: 100%; background: var(--opti-green); padding: 15px; font-size: 1.1rem; margin-top: 15px; }
     </style>
 </head>
@@ -113,88 +50,58 @@
 
     <div id="login-view">
         <div class="login-card">
-            <div class="logo-area">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg" id="img-logo" alt="Logo Empresa">
-                </div>
+            <div class="logo-area"><img src="logo.png" id="img-logo" alt="Logo" onerror="this.style.display='none'"></div>
             <h2 class="login-title">Acceso Producción</h2>
-            <input type="text" id="user" placeholder="Usuario (Ej: PRODUCTION)">
+            <input type="text" id="user" placeholder="Usuario">
             <input type="password" id="pass" placeholder="Contraseña">
             <button class="btn-login" onclick="login()">INGRESAR</button>
         </div>
     </div>
 
     <div id="dashboard-view" class="hidden">
-        
         <div class="top-bar">
-            <div>
-                <span style="font-size:0.8rem; color:#888;">CONECTADO COMO</span>
-                <h1 id="dept-title">...</h1>
-            </div>
-            <button class="btn-logout" onclick="location.reload()">Cerrar Sesión</button>
+            <div><span style="font-size:0.8rem; color:#888;">CONECTADO COMO</span> <h1 id="dept-title">...</h1></div>
+            <button class="btn-action" style="background:#888;" onclick="location.reload()">Cerrar Sesión</button>
         </div>
 
         <div class="dashboard-container">
-            
             <div class="card">
                 <h3>📂 Subir Nuevo Contenido</h3>
                 <div style="display: flex; gap: 10px;">
                     <input type="file" id="fileInput" multiple style="border: 1px solid #ddd; padding: 10px; flex-grow: 1;">
-                    <button class="btn-action" onclick="uploadFiles()">Subir Archivos</button>
+                    <button class="btn-action" onclick="uploadFiles()">Subir</button>
                 </div>
             </div>
 
             <div class="card">
                 <h3>📺 Control de Pantalla (Imágenes)</h3>
-                
                 <div class="config-row">
-                    <div>
-                        <strong>Modo Reproducción Automática</strong>
-                        <div style="font-size: 0.8rem; color: #666; margin-top: 4px;">Si desactivas esto, se usarán las flechas del control.</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="checkAuto">
-                        <span class="slider"></span>
-                    </label>
+                    <div><strong>Modo Automático</strong><br><small>Desactivar para usar control remoto</small></div>
+                    <label class="switch"><input type="checkbox" id="checkAuto"><span class="slider"></span></label>
                 </div>
-
                 <div class="config-row" style="margin-top: 10px;">
-                    <div>
-                        <strong>Tiempo por imagen</strong> (Solo automático)
-                    </div>
-                    <div>
-                        <input type="number" id="interval" value="10" style="width: 60px; padding: 5px; text-align: center;"> seg.
-                    </div>
+                    <div><strong>Tiempo por imagen</strong> (Solo automático)</div>
+                    <div><input type="number" id="interval" value="10" style="width: 50px;"> seg.</div>
                 </div>
-
-                <p style="margin-top: 20px; font-weight: 500;">Selecciona las imágenes activas:</p>
                 <div id="image-grid" class="gallery-grid"></div>
-
-                <button class="btn-action btn-save" onclick="saveConfig()">💾 GUARDAR Y ACTUALIZAR TV</button>
             </div>
 
             <div class="card">
                 <h3>🎬 Biblioteca de Videos</h3>
-                <p style="color:#666; font-size: 0.9rem;">Estos videos aparecerán automáticamente en el botón "Ver Tutoriales" de la TV.</p>
-                <div id="video-list" style="max-height: 200px; overflow-y: auto;"></div>
+                <p style="color:#666; font-size: 0.9rem;">Selecciona los videos que aparecerán en el menú de la TV:</p>
+                <div id="video-list" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 6px;"></div>
+                
+                <button class="btn-action btn-save" onclick="saveConfig()">💾 GUARDAR Y ACTUALIZAR TV</button>
             </div>
-
         </div>
     </div>
 
     <script>
         let authToken = null;
 
-        // Intenta cargar un logo real si existe en la carpeta root/public
-        // Puedes borrar esto si pones la ruta fija en el HTML
-        const imgLogo = document.getElementById('img-logo');
-        imgLogo.onerror = function() { this.src = 'https://via.placeholder.com/150x50?text=LOGO+EMPRESA'; };
-        imgLogo.src = 'logo.png'; 
-
         async function login() {
             const u = document.getElementById('user').value.trim();
             const p = document.getElementById('pass').value.trim();
-            if(!u || !p) return alert("Por favor ingresa usuario y contraseña");
-
             const token = 'Basic ' + btoa(u + ':' + p);
 
             try {
@@ -203,28 +110,17 @@
                     const data = await res.json();
                     authToken = token;
                     document.getElementById('dept-title').innerText = data.folder.toUpperCase();
-                    
-                    // Efecto de transición suave
-                    const loginView = document.getElementById('login-view');
-                    loginView.style.opacity = '0';
-                    setTimeout(() => {
-                        loginView.classList.add('hidden');
-                        document.getElementById('dashboard-view').classList.remove('hidden');
-                        loadContent();
-                    }, 300);
-                } else {
-                    alert("🚫 Credenciales incorrectas");
-                }
-            } catch(e) {
-                alert("Error de conexión con el servidor");
-            }
+                    document.getElementById('login-view').classList.add('hidden');
+                    document.getElementById('dashboard-view').classList.remove('hidden');
+                    loadContent();
+                } else { alert("🚫 Credenciales incorrectas"); }
+            } catch(e) { alert("Error de conexión"); }
         }
 
         async function loadContent() {
             const res = await fetch('/api/admin-content', { headers: { 'Authorization': authToken }});
             const data = await res.json();
             
-            // Configurar Inputs
             document.getElementById('interval').value = data.config.interval / 1000;
             document.getElementById('checkAuto').checked = data.config.isAuto;
 
@@ -237,27 +133,23 @@
                 const name = url.split('/').pop();
                 
                 if(url.match(/\.(mp4|mov|webm)$/i)) {
-                    // Lista de videos simple y limpia
+                    // --- VIDEO CON CHECKBOX ---
+                    const isActive = (data.config.activeVideos || []).includes(url);
+                    const checked = isActive ? 'checked' : '';
+                    
                     vList.innerHTML += `
-                        <div style="padding: 8px; border-bottom: 1px solid #eee; display: flex; align-items: center;">
-                            <span style="font-size: 1.2rem; margin-right: 10px;">🎥</span> ${name}
-                        </div>`;
+                        <label class="video-item">
+                            <input type="checkbox" class="video-check" value="${url}" ${checked}>
+                            <span style="font-size: 1rem;">🎥 ${name}</span>
+                        </label>`;
                 } else {
-                    // Grid de imágenes seleccionables
-                    const isChecked = data.config.activeImages.includes(url) ? 'checked' : '';
+                    // --- IMAGEN ---
+                    const isActive = data.config.activeImages.includes(url);
+                    const checked = isActive ? 'checked' : '';
                     const div = document.createElement('div');
                     div.className = 'img-item';
-                    div.innerHTML = `
-                        <input type="checkbox" class="img-check" value="${url}" ${isChecked}>
-                        <img src="${url}" title="${name}">
-                    `;
-                    // Click en la imagen marca el checkbox
-                    div.onclick = (e) => {
-                        if(e.target.type !== 'checkbox') {
-                            const cb = div.querySelector('input');
-                            cb.checked = !cb.checked;
-                        }
-                    };
+                    div.innerHTML = `<input type="checkbox" class="img-check" value="${url}" ${checked}><img src="${url}">`;
+                    div.onclick = (e) => { if(e.target.type !== 'checkbox') { const cb = div.querySelector('input'); cb.checked = !cb.checked; }};
                     grid.appendChild(div);
                 }
             });
@@ -265,39 +157,31 @@
 
         async function uploadFiles() {
             const input = document.getElementById('fileInput');
-            if(input.files.length === 0) return alert("Selecciona archivos primero");
-            
-            const btn = document.querySelector('.btn-action'); // Feedback visual
-            const originalText = btn.innerText;
-            btn.innerText = "Subiendo...";
-            btn.disabled = true;
-
+            if(input.files.length === 0) return alert("Selecciona archivos");
             const formData = new FormData();
             for (let f of input.files) formData.append('files', f);
-
-            try {
-                await fetch('/upload', { method: 'POST', headers: { 'Authorization': authToken }, body: formData });
-                alert("✅ Archivos subidos exitosamente");
-                input.value = "";
-                loadContent();
-            } catch(e) { alert("Error al subir"); }
-            
-            btn.innerText = originalText;
-            btn.disabled = false;
+            await fetch('/upload', { method: 'POST', headers: { 'Authorization': authToken }, body: formData });
+            alert("Subido"); loadContent(); input.value = "";
         }
 
         async function saveConfig() {
-            const checkedBoxes = document.querySelectorAll('.img-check:checked');
-            const selectedUrls = Array.from(checkedBoxes).map(cb => cb.value);
+            // Recoger Imagenes
+            const imgChecks = document.querySelectorAll('.img-check:checked');
+            const activeImages = Array.from(imgChecks).map(cb => cb.value);
+
+            // Recoger Videos (ESTO FALTABA)
+            const vidChecks = document.querySelectorAll('.video-check:checked');
+            const activeVideos = Array.from(vidChecks).map(cb => cb.value);
+
             const interval = document.getElementById('interval').value * 1000;
             const isAuto = document.getElementById('checkAuto').checked;
 
             await fetch('/api/save-config', {
                 method: 'POST',
                 headers: { 'Authorization': authToken, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ activeImages: selectedUrls, interval: interval, isAuto: isAuto })
+                body: JSON.stringify({ activeImages, activeVideos, interval, isAuto })
             });
-            alert("✅ TV Actualizada Correctamente");
+            alert("✅ Configuración Guardada");
         }
     </script>
 </body>
