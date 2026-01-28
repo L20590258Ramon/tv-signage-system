@@ -10,9 +10,9 @@ const PORT = 3000;
 const DATA_FILE = 'playlist.json';
 
 const USUARIOS = {
-    "IT":         { pass: "IT_0Pm**",    folder: 'IT' },
+    "IT":         { pass: "IT_0Pm**",    folder: 'It' },
     "PRODUCTION": { pass: "Prod_0Pm**",  folder: 'Production' },
-    "RH":         { pass: "Rh2025**",    folder: 'RH' },
+    "RH":         { pass: "Rh2025**",    folder: 'Rh' },
     "LOGISTIC":   { pass: "Logis_0Pm**", folder: 'Logistic' },
 };
 
