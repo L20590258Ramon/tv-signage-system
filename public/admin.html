@@ -1,344 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Optibelt - Control Panel</title>
+    <title>Optibelt Manager</title>
     <style>
-        :root { --primary: #0056b3; --bg: #f4f7f6; --card-bg: #ffffff; --text: #333; }
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
         
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background-color: var(--bg); 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            color: var(--text);
-            padding: 15px; 
-            box-sizing: border-box;
-        }
-        
-        .card { 
-            background: var(--card-bg); 
-            padding: 2.5rem; 
-            border-radius: 12px; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12); 
-            width: 100%; 
-            max-width: 450px; 
-            transition: all 0.3s ease; 
-            box-sizing: border-box; 
-        }
-        
-        .hidden { display: none !important; }
-        
-        .logo-img { display: block; margin: 0 auto 15px auto; max-width: 180px; height: auto; }
-        h2 { margin: 10px 0 5px 0; color: var(--primary); text-align: center; font-size: 1.5rem; }
-        .subtitle { text-align:center; color:#666; font-size:0.95rem; margin-bottom: 25px; font-weight: 500; }
-        
-        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; color: #555; }
-        
-        input[type="text"], input[type="password"], input[type="number"], select, button { 
-            width: 100%; 
-            padding: 12px; 
-            margin-bottom: 18px; 
-            border: 1px solid #ddd; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            font-size: 1rem; 
-        }
-        
-        .settings-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        
-        .checkbox-row { display: flex; align-items: center; margin-bottom: 10px; }
-        .checkbox-row input { width: 22px; height: 22px; margin-right: 12px; cursor: pointer; flex-shrink: 0; }
-        .checkbox-row label { margin-bottom: 0; cursor: pointer; line-height: 1.2; }
-        
-        .duration-input { display: flex; align-items: center; gap: 10px; margin-left: 34px; transition: opacity 0.3s; flex-wrap: wrap; }
-        .duration-input input { width: 70px; padding: 8px; margin-bottom: 0; text-align: center; }
-        .disabled { opacity: 0.5; pointer-events: none; }
+        /* Login Styles */
+        input[type="text"], input[type="password"] { width: 100%; padding: 10px; margin: 10px 0; }
+        button { background: #0056b3; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 1rem; }
+        button:hover { background: #004494; }
 
-        button { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: 700; transition: background 0.2s; }
-        button:hover { background-color: #004494; }
-        button:active { transform: scale(0.98); }
+        /* Manager Styles */
+        .section { margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        h2 { color: #333; }
         
-        .dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-        .logout-btn { width:auto; padding: 8px 18px; font-size:0.85rem; background:#dc3545; margin-bottom: 0; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
+        .img-item { position: relative; border: 2px solid transparent; cursor: pointer; }
+        .img-item img { width: 100%; height: 80px; object-fit: cover; border-radius: 5px; }
+        .img-item input { position: absolute; top: 5px; right: 5px; transform: scale(1.5); }
+        .img-item.selected { border-color: #0056b3; border-radius: 8px; }
         
-        .file-upload-wrapper { border: 2px dashed #ccc; padding: 25px; text-align: center; border-radius: 8px; margin-bottom: 20px; background: #fafafa; cursor: pointer; }
-        .file-upload-wrapper:active { background: #eef; border-color: var(--primary); }
-        
-        #status-msg { text-align: center; margin-top: 10px; font-weight: bold; min-height: 24px; }
-        .success { color: #28a745; } 
-        .error { color: #dc3545; }
-        .timer { font-size: 0.85rem; color: #888; text-align: center; margin-top: 25px; }
-
-        @media (max-width: 600px) {
-            .card { padding: 1.5rem; max-width: 100%; }
-            h2 { font-size: 1.3rem; }
-            .logo-img { max-width: 140px; }
-            .duration-input { margin-left: 0; margin-top: 10px; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px; justify-content: center; }
-            .dashboard-header { flex-direction: row; }
-            button, select, input { padding: 14px; }
-        }
+        .video-list p { background: #eee; padding: 5px; margin: 2px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-    <div id="login-view" class="card">
-        <img src="logo.png" alt="Optibelt Logo" class="logo-img" onerror="this.style.display='none'">
-        <h2>Optibelt Production Mexico</h2>
-        <p class="subtitle">Display Management System</p>
-        
-        <label>Username</label>
-        <input type="text" id="user" placeholder="User" autocomplete="off">
-        <label>Password</label>
-        <input type="password" id="pass" placeholder="••••••">
-        
-        <button onclick="login()">Login</button>
-        <div id="login-error" class="error" style="text-align:center; margin-top:10px;"></div>
+    <div id="login-view" class="container">
+        <h1>Acceso Admin</h1>
+        <input type="text" id="user" placeholder="Usuario">
+        <input type="password" id="pass" placeholder="Contraseña">
+        <button onclick="login()">Entrar</button>
     </div>
 
-    <div id="dashboard-view" class="card hidden">
-        <div class="dashboard-header">
-            <img src="logo.png" alt="Optibelt Logo" class="logo-img" style="margin: 0; max-width: 80px;">
-            <button onclick="logout()" class="logout-btn">Logout</button>
+    <div id="dashboard-view" class="container hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1 id="dept-title">Panel</h1>
+            <button onclick="location.reload()" style="background:#666; font-size:0.8rem;">Salir</button>
         </div>
 
-        <label>Target Display:</label>
-        <select id="targetSelect"></select>
-
-        <label>Upload Content:</label>
-        <div class="file-upload-wrapper" onclick="document.getElementById('fileInput').click()">
-            <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none">
-            <span style="font-size: 2rem;">📂</span><br>
-            <strong>Click to select files</strong>
-            <small style="color:#666; display: block; margin-top: 8px;">JPG, PNG, MP4 (Max 400MB)</small>
-        </div>
-        <div id="file-list" style="text-align:center; margin-bottom:15px; font-size:0.85rem; color:#0056b3;"></div>
-
-        <label>Slideshow Settings:</label>
-        <div class="settings-box">
-            <div class="checkbox-row">
-                <input type="checkbox" id="autoPlayCheck" onchange="toggleDurationInput()">
-                <label for="autoPlayCheck">Auto-play Images (Slideshow)</label>
-            </div>
-            <div class="duration-input disabled" id="durationContainer">
-                <span>Change every:</span>
-                <input type="number" id="durationValue" value="10" min="3" max="300">
-                <span>seconds</span>
-            </div>
+        <div class="section">
+            <h3>📂 1. Subir Contenido Nuevo</h3>
+            <input type="file" id="fileInput" multiple>
+            <button onclick="uploadFiles()">Subir al Servidor</button>
+            <small style="display:block; margin-top:5px; color:#666;">Nota: Al subir no se muestran automáticamente. Debes activarlos abajo.</small>
         </div>
 
-        <button onclick="publicar()">Send to Displays</button>
-        
-        <div id="status-msg"></div>
-        <div class="timer">Auto-logout in: <span id="timer-count">5:00</span></div>
+        <div class="section">
+            <h3>📺 2. Imágenes en Pantalla (Carrusel)</h3>
+            <p>Selecciona las imágenes que quieres que se vean en la TV:</p>
+            
+            <label>Tiempo por imagen (seg): <input type="number" id="interval" value="10" style="width:50px"></label>
+            
+            <div id="image-grid" class="gallery-grid"></div>
+            
+            <br>
+            <button onclick="saveConfig()" style="width:100%; padding: 15px; font-size: 1.2rem;">💾 ACTUALIZAR TV AHORA</button>
+        </div>
+
+        <div class="section">
+            <h3>🎬 3. Biblioteca de Tutoriales</h3>
+            <p style="color:#666;">Los videos siempre están disponibles en el menú de la TV.</p>
+            <div id="video-list" class="video-list"></div>
+        </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN DE NOMBRES BONITOS ---
-        const DISPLAY_NAMES = {
-            'CrossCutter': 'Cross Cutter',
-            'Vulcas': 'Vulcas',
-            'ProductionFloor': 'Production Floor',
-            'Confections': 'Confections',
-            'Kalandria': 'Kalandria',
-            'Reception': 'Reception',
-            'Extrusion': 'Extrusion'
-        };
-
-        const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; 
         let authToken = null;
-        let inactivityTimer;
-        let countdownInterval;
+        let allImages = [];
 
-        document.getElementById('fileInput').addEventListener('change', function(){
-            const list = document.getElementById('file-list');
-            if(this.files.length > 0) {
-                list.innerText = `${this.files.length} file(s) selected`;
-            } else {
-                list.innerText = '';
-            }
-        });
-
-        function toggleDurationInput() {
-            const isChecked = document.getElementById('autoPlayCheck').checked;
-            const container = document.getElementById('durationContainer');
-            if(isChecked) container.classList.remove('disabled');
-            else container.classList.add('disabled');
-        }
-
-        // --- 3. LOGIN LÓGICA (ACTUALIZADA PARA RBAC) ---
         async function login() {
             const u = document.getElementById('user').value;
             const p = document.getElementById('pass').value;
-            const errorDiv = document.getElementById('login-error');
-
-            if(!u || !p) { errorDiv.innerText = "Please enter username and password"; return; }
-
             const token = 'Basic ' + btoa(u + ':' + p);
-            errorDiv.innerText = "Authenticating...";
 
-            try {
-                // Ahora esperamos que el server nos devuelva JSON con los permisos
-                const res = await fetch('/api/login', { 
-                    method: 'POST', 
-                    headers: { 'Authorization': token } 
-                });
-
-                if (res.ok) {
-                    const data = await res.json(); // Leemos la respuesta del server
-                    authToken = token;
-                    
-                    // AQUÍ ESTÁ LA MAGIA: Construimos el menú según lo que dijo el server
-                    setupTvDropdown(data.allowedTVs);
-                    
-                    mostrarDashboard();
-                    errorDiv.innerText = "";
-                } else {
-                    errorDiv.innerText = "Incorrect username or password";
-                }
-            } catch (e) {
-                console.error(e);
-                errorDiv.innerText = "Server connection error";
-            }
-        }
-
-        // --- FUNCION NUEVA: CREAR MENU DINAMICO ---
-        function setupTvDropdown(allowedList) {
-            const select = document.getElementById('targetSelect');
-            select.innerHTML = ''; // Borramos cualquier opción vieja
-
-            // Si es ADMIN, tiene permiso 'all'
-            if (allowedList.includes('all')) {
-                const opt = document.createElement('option');
-                opt.value = 'all';
-                opt.text = '📡 ALL DISPLAYS (Admin)';
-                select.appendChild(opt);
-                
-                // Agregamos todas las demás
-                Object.keys(DISPLAY_NAMES).forEach(key => {
-                    const el = document.createElement('option');
-                    el.value = key;
-                    el.text = DISPLAY_NAMES[key];
-                    select.appendChild(el);
-                });
+            const res = await fetch('/api/login', { method: 'POST', headers: { 'Authorization': token }});
+            if(res.ok) {
+                const data = await res.json();
+                authToken = token;
+                document.getElementById('dept-title').innerText = "Gestión: " + data.folder;
+                document.getElementById('login-view').classList.add('hidden');
+                document.getElementById('dashboard-view').classList.remove('hidden');
+                loadContent();
             } else {
-                // Si es usuario normal (RH, Logística), solo agregamos las suyas
-                allowedList.forEach(tvId => {
-                    if(DISPLAY_NAMES[tvId]) {
-                        const el = document.createElement('option');
-                        el.value = tvId;
-                        el.text = DISPLAY_NAMES[tvId];
-                        select.appendChild(el);
-                    }
-                });
+                alert("Error de credenciales");
             }
         }
 
-        function logout() {
-            authToken = null;
-            document.getElementById('user').value = '';
-            document.getElementById('pass').value = '';
-            document.getElementById('login-view').classList.remove('hidden');
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('status-msg').innerText = '';
-            document.getElementById('file-list').innerText = '';
-            stopTimers();
-        }
-
-        function mostrarDashboard() {
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('dashboard-view').classList.remove('hidden');
-            resetInactivityTimer(); 
-        }
-
-        async function publicar() {
-            const input = document.getElementById('fileInput');
-            const target = document.getElementById('targetSelect').value;
-            const status = document.getElementById('status-msg');
-            const isAuto = document.getElementById('autoPlayCheck').checked;
-            const duration = document.getElementById('durationValue').value;
-
-            if (input.files.length === 0) {
-                status.innerText = "⚠️ Please select a file first"; status.className = "error"; return;
-            }
-
-            const formData = new FormData();
-            formData.append('target', target);
-            formData.append('isAuto', isAuto);
-            formData.append('duration', duration);
-
-            for (let i = 0; i < input.files.length; i++) {
-                formData.append('archivos', input.files[i]);
-            }
-
-            status.innerText = "⏳ Uploading content..."; status.className = "";
-            document.querySelector('button[onclick="publicar()"]').disabled = true;
-
-            try {
-                const res = await fetch('/publicar', {
-                    method: 'POST',
-                    headers: { 'Authorization': authToken },
-                    body: formData
-                });
-
-                if (res.ok) {
-                    status.innerText = "✅ Sent successfully!"; status.className = "success"; 
-                    input.value = "";
-                    document.getElementById('file-list').innerText = "";
-                } else if (res.status === 403) {
-                    status.innerText = "⛔ No permission for this TV."; status.className = "error";
-                } else { throw new Error(); }
-            } catch (e) {
-                status.innerText = "❌ Error uploading content."; status.className = "error";
-            } finally {
-                document.querySelector('button[onclick="publicar()"]').disabled = false;
-            }
-        }
-
-        function resetInactivityTimer() {
-            if (!authToken) return;
-            clearTimeout(inactivityTimer);
-            clearInterval(countdownInterval);
-
-            inactivityTimer = setTimeout(() => {
-                alert("Your session has expired for security reasons.");
-                logout();
-            }, INACTIVITY_LIMIT_MS);
-
-            let secondsLeft = INACTIVITY_LIMIT_MS / 1000;
-            updateTimerDisplay(secondsLeft);
+        async function loadContent() {
+            const res = await fetch('/api/admin-content', { headers: { 'Authorization': authToken }});
+            const data = await res.json();
             
-            countdownInterval = setInterval(() => {
-                secondsLeft--;
-                updateTimerDisplay(secondsLeft);
-                if(secondsLeft <= 0) { stopTimers(); logout(); }
-            }, 1000);
+            const grid = document.getElementById('image-grid');
+            const vList = document.getElementById('video-list');
+            grid.innerHTML = '';
+            vList.innerHTML = '';
+            
+            // Setear intervalo guardado
+            document.getElementById('interval').value = data.config.interval / 1000;
+
+            // Separar imagenes y videos
+            data.allFiles.forEach(url => {
+                if(url.match(/\.(mp4|mov|webm)$/i)) {
+                    vList.innerHTML += `<p>🎥 ${url.split('/').pop()}</p>`;
+                } else {
+                    // Renderizar imagen con Checkbox
+                    const name = url.split('/').pop();
+                    const isChecked = data.config.activeImages.includes(url) ? 'checked' : '';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'img-item';
+                    div.innerHTML = `
+                        <input type="checkbox" class="img-check" value="${url}" ${isChecked}>
+                        <img src="${url}" title="${name}">
+                    `;
+                    grid.appendChild(div);
+                }
+            });
         }
 
-        function updateTimerDisplay(seconds) {
-            if (seconds < 0) seconds = 0;
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-            const display = document.getElementById('timer-count');
-            if(display) display.innerText = `${m}:${s}`;
+        async function uploadFiles() {
+            const input = document.getElementById('fileInput');
+            if(input.files.length === 0) return alert("Selecciona archivos");
+            
+            const formData = new FormData();
+            for (let f of input.files) formData.append('files', f);
+
+            await fetch('/upload', { method: 'POST', headers: { 'Authorization': authToken }, body: formData });
+            alert("Subido. Ahora selecciónalos en la lista y guarda.");
+            input.value = "";
+            loadContent(); // Recargar para ver los nuevos
         }
 
-        function stopTimers() {
-            clearTimeout(inactivityTimer);
-            clearInterval(countdownInterval);
-        }
+        async function saveConfig() {
+            // Recolectar checkboxes marcados
+            const checkedBoxes = document.querySelectorAll('.img-check:checked');
+            const selectedUrls = Array.from(checkedBoxes).map(cb => cb.value);
+            const interval = document.getElementById('interval').value * 1000;
 
-        window.onload = () => {
-            const body = document.body;
-            body.addEventListener('mousemove', resetInactivityTimer);
-            body.addEventListener('keypress', resetInactivityTimer);
-            body.addEventListener('click', resetInactivityTimer);
-            body.addEventListener('touchstart', resetInactivityTimer);
-        };
+            await fetch('/api/save-config', {
+                method: 'POST',
+                headers: { 'Authorization': authToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ activeImages: selectedUrls, interval: interval })
+            });
+
+            alert("✅ TV Actualizada Correctamente");
+        }
     </script>
 </body>
 </html>
